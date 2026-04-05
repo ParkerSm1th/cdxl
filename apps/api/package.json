@@ -1,0 +1,20 @@
+{
+  "name": "@codexlink/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup --config tsup.config.ts",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@codexlink/db": "workspace:*",
+    "@codexlink/shared": "workspace:*",
+    "@hono/node-server": "^1.19.1",
+    "hono": "^4.9.6",
+    "pg": "^8.16.3",
+    "zod": "^4.1.8"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(npx shadcn@latest init -d --base-color zinc --css-variables --style default)",
+      "Bash(npx shadcn@latest init --help)",
+      "Bash(npx shadcn@latest:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm --filter @codexlink/web typecheck)",
+      "Bash(PATH=\"$HOME/.nvm/versions/node/v22.22.0/bin:$PATH\" pnpm:*)",
+      "Bash(PATH=\"$HOME/.nvm/versions/node/v22.22.0/bin:$PATH\" pnpm test:*)",
+      "Bash(pnpm test:*)",
+      "Bash(ls /Users/parker/Desktop/Personal/codexlink/node_modules/.pnpm/@base-ui*/node_modules/@base-ui/react/)",
+      "Bash(npx turbo:*)",
+      "Bash(npx next:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}

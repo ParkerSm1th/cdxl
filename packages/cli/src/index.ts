@@ -12,6 +12,8 @@ import {
   syncSession,
 } from './tracker';
 
+const DEFAULT_SITE_URL = 'https://codexl.ink';
+
 async function waitForExit(): Promise<void> {
   await new Promise<void>((resolve) => {
     const handler = () => resolve();
@@ -23,7 +25,7 @@ async function waitForExit(): Promise<void> {
 async function runShare(sessionId: string, apiUrl?: string) {
   const context = createCliContext({ apiBaseUrl: apiUrl });
   const tracked = await syncSession(sessionId, context);
-  const siteUrl = process.env['SITE_URL'] ?? 'https://codexl.ink';
+  const siteUrl = process.env['SITE_URL'] ?? DEFAULT_SITE_URL;
   context.logger.log(`Share URL: ${buildPublicShareUrl(siteUrl, tracked.shareId)}`);
   context.logger.log(`Manage token: ${tracked.manageToken}`);
 }

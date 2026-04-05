@@ -1,5 +1,6 @@
 node_modules
 .next
+.next.stale.*
 .turbo
 dist
 coverage
@@ -8,6 +9,4 @@ coverage
 .env.*.local
 pnpm-lock.yaml
 drizzle/*.sqlite
-drizzle/meta
 *.tsbuildinfo
-

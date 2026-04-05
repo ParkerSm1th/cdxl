@@ -5,8 +5,14 @@
   "packageManager": "pnpm@10.8.1",
   "scripts": {
     "build": "pnpm -r build",
+    "build:api": "pnpm --filter @codexlink/db build && pnpm --filter @codexlink/api build",
+    "build:web": "pnpm --filter @codexlink/web build",
     "check": "pnpm -r typecheck && pnpm test",
     "dev": "pnpm -r --parallel --stream dev",
+    "migrate:deploy": "node packages/db/dist/migrate.js",
+    "publish:cli": "pnpm --filter cdxl publish:npm",
+    "start:api": "pnpm --filter @codexlink/api start",
+    "start:web": "pnpm --filter @codexlink/web start",
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "pnpm -r typecheck"

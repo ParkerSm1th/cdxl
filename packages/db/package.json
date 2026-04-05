@@ -8,9 +8,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsup --config tsup.config.ts",
     "generate": "drizzle-kit generate --config ../../drizzle.config.ts",
     "migrate": "drizzle-kit migrate --config ../../drizzle.config.ts",
+    "migrate:deploy": "node dist/migrate.js",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

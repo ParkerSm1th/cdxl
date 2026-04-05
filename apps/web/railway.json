@@ -1,0 +1,23 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "RAILPACK",
+    "buildCommand": "pnpm build:web",
+    "watchPatterns": [
+      "apps/web/**",
+      "package.json",
+      "packages/shared/**",
+      "pnpm-lock.yaml",
+      "pnpm-workspace.yaml",
+      "tsconfig.base.json",
+      "tsconfig.json"
+    ]
+  },
+  "deploy": {
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 120,
+    "startCommand": "pnpm start:web",
+    "restartPolicyMaxRetries": 10,
+    "restartPolicyType": "ON_FAILURE"
+  }
+}

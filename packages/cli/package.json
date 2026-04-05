@@ -8,10 +8,17 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup --config tsup.config.ts",
     "dev": "tsx src/index.ts",
+    "publish:npm": "node ./scripts/publish.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "dependencies": {
     "@codexlink/shared": "workspace:*",

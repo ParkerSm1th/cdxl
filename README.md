@@ -56,6 +56,47 @@ Build everything:
 pnpm build
 ```
 
+## Railway
+
+This repo deploys as two Railway services:
+
+- `apps/api`: Hono API, plus the pre-deploy migration step
+- `apps/web`: Next.js public viewer
+
+Each service has its own config:
+
+- [apps/api/railway.json](/Users/parker/Desktop/Personal/codexlink/apps/api/railway.json)
+- [apps/web/railway.json](/Users/parker/Desktop/Personal/codexlink/apps/web/railway.json)
+- [apps/api/Dockerfile.railway](/Users/parker/Desktop/Personal/codexlink/apps/api/Dockerfile.railway)
+- [apps/web/Dockerfile.railway](/Users/parker/Desktop/Personal/codexlink/apps/web/Dockerfile.railway)
+
+Recommended setup:
+
+1. Import the monorepo into Railway and create two services from it.
+2. Leave each service `Root Directory` set to the repository root `/`.
+3. Point the API service config file at [apps/api/railway.json](/Users/parker/Desktop/Personal/codexlink/apps/api/railway.json) using the absolute repo path `/apps/api/railway.json`.
+4. Point the web service config file at [apps/web/railway.json](/Users/parker/Desktop/Personal/codexlink/apps/web/railway.json) using the absolute repo path `/apps/web/railway.json`.
+5. Give the API service a public domain only if you want direct public API access.
+6. Attach your custom domain, such as `codexl.ink`, to the web service.
+
+Important:
+
+- Railway auto-import for JavaScript monorepos may treat `apps/api` and `apps/web` as package roots for config detection.
+- Because Railway automatically uses a file literally named `Dockerfile` at the package root, these services are configured to use Railpack instead.
+- The example Dockerfiles are intentionally renamed to `Dockerfile.railway` so Railway does not auto-detect them and build with the wrong context.
+- Leave the service root directory at `/` unless you are intentionally deploying an isolated subdirectory service.
+
+Environment variables:
+
+- API service:
+  - `DATABASE_URL`: your Neon Postgres connection string
+  - `SITE_URL`: the public web origin, for example `https://codexl.ink`
+- Web service:
+  - `SITE_URL`: the public web origin, for example `https://codexl.ink`
+  - `API_BASE_URL`: internal API URL, for example `http://api.railway.internal:8787` if the API service is named `api`
+
+The API service runs `pnpm migrate:deploy` as a Railway pre-deploy command, which executes [packages/db/src/migrate.ts](/Users/parker/Desktop/Personal/codexlink/packages/db/src/migrate.ts) against the `drizzle` SQL files before the new deployment starts serving traffic.
+
 ## CLI
 
 Examples:
@@ -74,3 +115,12 @@ For local workspace development, run the CLI directly with:
 ```bash
 pnpm --filter cdxl dev share <session-id>
 ```
+
+To publish the npm package from the workspace:
+
+```bash
+pnpm publish:cli -- --dry-run
+pnpm publish:cli
+```
+
+The publish script stages a clean package, forces production defaults for `API_BASE_URL`, `CODEXLINK_API_URL`, and `SITE_URL`, and refuses to publish if the packed output contains unexpected files or obvious secrets.

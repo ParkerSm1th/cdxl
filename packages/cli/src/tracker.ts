@@ -23,6 +23,7 @@ import {
 } from './state';
 
 const execFileAsync = promisify(execFile);
+const DEFAULT_API_BASE_URL = 'https://api.codexl.ink';
 
 export type CliContext = {
   apiBaseUrl: string;
@@ -51,7 +52,8 @@ export function createCliContext(overrides: Partial<CliContext> = {}): CliContex
     apiBaseUrl:
       overrides.apiBaseUrl ??
       process.env['CODEXLINK_API_URL'] ??
-      'http://localhost:8787',
+      process.env['API_BASE_URL'] ??
+      DEFAULT_API_BASE_URL,
     codexHome:
       expandHomePath(overrides.codexHome) ??
       expandHomePath(process.env['CODEX_HOME']),

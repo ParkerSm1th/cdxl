@@ -1,7 +1,6 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join, parse, resolve } from 'node:path';
-import { config as loadEnv } from 'dotenv';
 
 let envLoaded = false;
 
@@ -25,12 +24,70 @@ function findEnvDirectory(startDir: string): string | null {
   }
 }
 
+function decodeQuotedValue(input: string): string {
+  if (input.startsWith('"') && input.endsWith('"')) {
+    return input
+      .slice(1, -1)
+      .replace(/\\n/g, '\n')
+      .replace(/\\"/g, '"')
+      .replace(/\\\\/g, '\\');
+  }
+
+  if (input.startsWith('\'') && input.endsWith('\'')) {
+    return input.slice(1, -1);
+  }
+
+  const commentIndex = input.search(/\s#/);
+  return (commentIndex >= 0 ? input.slice(0, commentIndex) : input).trim();
+}
+
+function parseEnvFile(path: string): Record<string, string> {
+  const content = readFileSync(path, 'utf8');
+  const entries: Record<string, string> = {};
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const trimmedLine = rawLine.trim();
+
+    if (!trimmedLine || trimmedLine.startsWith('#')) {
+      continue;
+    }
+
+    const line = trimmedLine.startsWith('export ')
+      ? trimmedLine.slice('export '.length).trim()
+      : trimmedLine;
+    const separatorIndex = line.indexOf('=');
+
+    if (separatorIndex < 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) {
+      continue;
+    }
+
+    const rawValue = line.slice(separatorIndex + 1).trim();
+    entries[key] = decodeQuotedValue(rawValue);
+  }
+
+  return entries;
+}
+
 function loadEnvFile(path: string, override = false): void {
   if (!existsSync(path)) {
     return;
   }
 
-  loadEnv({ override, path });
+  const parsed = parseEnvFile(path);
+
+  for (const [key, value] of Object.entries(parsed)) {
+    if (!override && process.env[key] !== undefined) {
+      continue;
+    }
+
+    process.env[key] = value;
+  }
 }
 
 export function loadCodexLinkEnv(): void {

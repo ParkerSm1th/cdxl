@@ -1,9 +1,9 @@
 {
-  "name": "cdxl",
-  "version": "0.1.0",
+  "name": "codex-link",
+  "version": "0.1.2",
   "type": "module",
   "bin": {
-    "cdxl": "dist/index.js"
+    "cdxl": "dist/bin.js"
   },
   "files": [
     "dist"

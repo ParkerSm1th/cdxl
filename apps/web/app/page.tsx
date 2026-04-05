@@ -32,7 +32,7 @@ export default function HomePage() {
 
         {/* Install step */}
         <div className="mt-8 space-y-3">
-          <CopyCommand command="npm i -g cdxl" />
+          <CopyCommand command="npm i -g codex-link" />
         </div>
       </section>
 
@@ -99,7 +99,7 @@ export default function HomePage() {
         <Feature
           icon={<Download className="h-4 w-4" />}
           title="Install once"
-          text="npm i -g cdxl gives Codex a tool it can call whenever you want to share."
+          text="npm i -g codex-link gives Codex a tool it can call whenever you want to share."
         />
         <Feature
           icon={<MessageSquare className="h-4 w-4" />}

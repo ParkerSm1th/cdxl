@@ -10,7 +10,7 @@
     "check": "pnpm -r typecheck && pnpm test",
     "dev": "pnpm -r --parallel --stream dev",
     "migrate:deploy": "node packages/db/dist/migrate.js",
-    "publish:cli": "pnpm --filter cdxl publish:npm",
+    "publish:cli": "pnpm --filter codex-link publish:npm",
     "start:api": "pnpm --filter @codexlink/api start",
     "start:web": "pnpm --filter @codexlink/web start",
     "test": "vitest run",

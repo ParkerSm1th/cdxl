@@ -102,10 +102,10 @@ The API service runs `pnpm migrate:deploy` as a Railway pre-deploy command, whic
 Examples:
 
 ```bash
-npx cdxl share <session-id>
-npx cdxl track <session-id>
-npx cdxl monitor
-npx cdxl unshare <share-id>
+npx codex-link share <session-id>
+npx codex-link track <session-id>
+npx codex-link monitor
+npx codex-link unshare <share-id>
 ```
 
 The CLI reads sessions from `~/.codex/session_index.jsonl` and `~/.codex/sessions/**`, uploads a redacted public snapshot, and stores local tracking state under the platform app-state directory.
@@ -113,7 +113,7 @@ The CLI reads sessions from `~/.codex/session_index.jsonl` and `~/.codex/session
 For local workspace development, run the CLI directly with:
 
 ```bash
-pnpm --filter cdxl dev share <session-id>
+pnpm --filter codex-link dev share <session-id>
 ```
 
 To publish the npm package from the workspace:
@@ -121,6 +121,7 @@ To publish the npm package from the workspace:
 ```bash
 pnpm publish:cli -- --dry-run
 pnpm publish:cli
+pnpm publish:cli -- minor
 ```
 
-The publish script stages a clean package, forces production defaults for `API_BASE_URL`, `CODEXLINK_API_URL`, and `SITE_URL`, and refuses to publish if the packed output contains unexpected files or obvious secrets.
+The publish script stages a clean package, forces production defaults for `API_BASE_URL`, `CODEXLINK_API_URL`, and `SITE_URL`, bumps the CLI package version before publish, and refuses to publish if the packed output contains unexpected files or obvious secrets. It defaults to a patch bump, and you can pass `minor`, `major`, `prerelease`, or an explicit semver version as the first argument.

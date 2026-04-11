@@ -21,5 +21,5 @@ export default async function SharePage({
 }) {
   const { shareId } = await params;
   const result = await fetchShare(shareId);
-  return <TranscriptPage result={result} />;
+  return <TranscriptPage result={result} shareId={shareId} />;
 }

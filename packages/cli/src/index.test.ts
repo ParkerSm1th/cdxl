@@ -1,4 +1,5 @@
 import { createProgram } from './index';
+import { readFileSync } from 'node:fs';
 
 describe('cli help output', () => {
   it('shows command descriptions in the top-level help', () => {
@@ -31,5 +32,13 @@ describe('cli help output', () => {
     expect(shareHelp).toContain('Create a public share for one Codex session and print its URL.');
     expect(shareHelp).toContain('sessionId        Codex session ID to publish');
     expect(shareHelp).toContain('--api-url <url>  Override the CodexLink API base URL');
+  });
+
+  it('points the dev script at the executable entrypoint', () => {
+    const packageJson = JSON.parse(
+      readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+    ) as { scripts?: Record<string, string> };
+
+    expect(packageJson.scripts?.dev).toBe('tsx src/bin.ts');
   });
 });

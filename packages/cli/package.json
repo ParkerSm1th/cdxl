@@ -1,6 +1,6 @@
 {
   "name": "codex-link",
-  "version": "0.1.2",
+  "version": "0.1.5",
   "type": "module",
   "bin": {
     "cdxl": "dist/bin.js"
@@ -13,7 +13,7 @@
   },
   "scripts": {
     "build": "tsup --config tsup.config.ts",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx src/bin.ts",
     "publish:npm": "node ./scripts/publish.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@codexlink/shared": "workspace:*",
-    "commander": "^14.0.1"
+    "commander": "^14.0.1",
+    "ora": "^8.2.0"
   }
 }

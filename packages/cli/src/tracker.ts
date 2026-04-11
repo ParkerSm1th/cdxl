@@ -21,6 +21,7 @@ import {
   type AppState,
   type TrackedSessionState,
 } from './state';
+import { createProgressReporter, type ProgressReporter } from './loader';
 
 const execFileAsync = promisify(execFile);
 const DEFAULT_API_BASE_URL = 'https://api.codexl.ink';
@@ -67,24 +68,44 @@ async function upsertTrackedSession(
   context: CliContext,
   snapshot: ShareSnapshotInput,
   resolvedFilePath: string,
+  progress: ProgressReporter,
 ): Promise<TrackedSessionState> {
-  const state = await loadAppState(context.stateRoot);
+  const state = await progress.step(
+    'Loading local share state',
+    () => loadAppState(context.stateRoot),
+    'Loaded local share state',
+  );
   const existing = state.trackedSessions[snapshot.sourceSessionId];
   const client = new CodexLinkApiClient(context.apiBaseUrl, context.fetchImpl);
 
   if (existing) {
+    progress.note(`Found existing tracked share ${existing.shareId}`);
+
     try {
       if (existing.lastContentHash !== snapshot.contentHash) {
-        await client.updateShare(existing.shareId, existing.manageToken, snapshot);
+        await progress.step(
+          'Uploading updated session snapshot',
+          () => client.updateShare(existing.shareId, existing.manageToken, snapshot),
+          'Updated existing share',
+        );
       } else {
-        await client.getShare(existing.shareId);
+        await progress.step(
+          'Checking existing shared session',
+          () => client.getShare(existing.shareId),
+          'Existing shared session is still available',
+        );
       }
     } catch (error) {
       if (!shouldRecreateShare(error)) {
         throw error;
       }
 
-      const created = await client.createShare(snapshot);
+      progress.note('Existing share is no longer available; creating a new one');
+      const created = await progress.step(
+        'Uploading new shared session',
+        () => client.createShare(snapshot),
+        'Uploaded new shared session',
+      );
       const recreatedTracked: TrackedSessionState = {
         filePath: resolvedFilePath,
         lastContentHash: snapshot.contentHash,
@@ -94,7 +115,11 @@ async function upsertTrackedSession(
         title: snapshot.title,
       };
       state.trackedSessions[snapshot.sourceSessionId] = recreatedTracked;
-      await saveAppState(context.stateRoot, state);
+      await progress.step(
+        'Saving local share state',
+        () => saveAppState(context.stateRoot, state),
+        'Saved local share state',
+      );
       return recreatedTracked;
     }
 
@@ -106,11 +131,20 @@ async function upsertTrackedSession(
     };
 
     state.trackedSessions[snapshot.sourceSessionId] = tracked;
-    await saveAppState(context.stateRoot, state);
+    await progress.step(
+      'Saving local share state',
+      () => saveAppState(context.stateRoot, state),
+      'Saved local share state',
+    );
     return tracked;
   }
 
-  const created = await client.createShare(snapshot);
+  progress.note('No tracked share found for this session');
+  const created = await progress.step(
+    'Uploading new shared session',
+    () => client.createShare(snapshot),
+    'Uploaded new shared session',
+  );
   const tracked: TrackedSessionState = {
     filePath: resolvedFilePath,
     lastContentHash: snapshot.contentHash,
@@ -120,7 +154,11 @@ async function upsertTrackedSession(
     title: snapshot.title,
   };
   state.trackedSessions[snapshot.sourceSessionId] = tracked;
-  await saveAppState(context.stateRoot, state);
+  await progress.step(
+    'Saving local share state',
+    () => saveAppState(context.stateRoot, state),
+    'Saved local share state',
+  );
   return tracked;
 }
 
@@ -128,14 +166,24 @@ export async function syncSession(
   sessionId: string,
   context: CliContext,
 ): Promise<TrackedSessionState> {
-  const resolved = await resolveSessionById(sessionId, context.codexHome);
-  const snapshot = buildShareSnapshot({
-    rawText: resolved.rawText,
-    sessionId: resolved.id,
-    sourceUpdatedAt: resolved.sourceUpdatedAt,
-    title: resolved.title,
-  });
-  return upsertTrackedSession(context, snapshot, resolved.filePath);
+  const progress = createProgressReporter(context.logger);
+  const resolved = await progress.step(
+    'Resolving local Codex session',
+    () => resolveSessionById(sessionId, context.codexHome),
+    'Resolved local Codex session',
+  );
+  const snapshot = await progress.step(
+    'Preparing share snapshot',
+    () =>
+      buildShareSnapshot({
+        rawText: resolved.rawText,
+        sessionId: resolved.id,
+        sourceUpdatedAt: resolved.sourceUpdatedAt,
+        title: resolved.title,
+      }),
+    'Prepared share snapshot',
+  );
+  return upsertTrackedSession(context, snapshot, resolved.filePath, progress);
 }
 
 export class SessionTracker {

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   Terminal,
   ChevronDown,
@@ -12,11 +12,21 @@ import {
   Search,
   FileCode,
   CircleCheck,
+  Download,
+  Copy,
+  Link,
 } from "lucide-react";
 import { Markdown } from "@/components/markdown";
 import { ImageLightboxProvider, useImageLightbox } from "@/components/image-lightbox";
+import { ThemeToggle } from "@/components/theme-toggle";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { ShareFetchResult } from "../lib/api";
-import type { TranscriptEntry } from "@codexlink/shared";
+import type { TranscriptEntry, RenderPayload } from "@codexlink/shared";
 
 const OUTPUT_PREVIEW_LIMIT = 400;
 
@@ -60,6 +70,161 @@ function getToolAction(
     return { icon: <Terminal className="h-3.5 w-3.5" />, verb: "Ran" };
   }
   return { icon: <Wrench className="h-3.5 w-3.5" />, verb: "" };
+}
+
+function generateMarkdown(data: RenderPayload): string {
+  const lines: string[] = [];
+  lines.push(`# ${data.title}`);
+  lines.push("");
+  if (data.excerpt && data.excerpt !== data.title) {
+    lines.push(`> ${data.excerpt}`);
+    lines.push("");
+  }
+  lines.push("---");
+  lines.push("");
+
+  for (const entry of data.entries) {
+    switch (entry.kind) {
+      case "message":
+        lines.push(entry.role === "user" ? "**User:**" : "**Assistant:**");
+        lines.push("");
+        lines.push(entry.text);
+        lines.push("");
+        break;
+      case "tool_call": {
+        const action = getToolAction(entry.toolName);
+        const lower = entry.toolName.toLowerCase();
+        const isBash =
+          lower.includes("bash") ||
+          lower.includes("shell") ||
+          lower.includes("command");
+        let label = entry.toolName;
+        try {
+          const parsed = JSON.parse(entry.input);
+          if (isBash && parsed.command) {
+            label = `\`$ ${parsed.command}\``;
+          } else if (parsed.file_path) {
+            label = `${action.verb} \`${parsed.file_path}\``;
+          }
+        } catch {
+          /* keep default label */
+        }
+        lines.push(`*${label}*`);
+        lines.push("");
+        if (!isBash) {
+          lines.push("```");
+          lines.push(entry.input);
+          lines.push("```");
+          lines.push("");
+        }
+        break;
+      }
+      case "tool_output":
+        lines.push("```");
+        lines.push(entry.output);
+        lines.push("```");
+        lines.push("");
+        break;
+      case "commentary":
+        lines.push(`*${entry.text}*`);
+        lines.push("");
+        break;
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function downloadFile(content: string, filename: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadMarkdown(data: RenderPayload) {
+  const md = generateMarkdown(data);
+  const slug = data.title.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  downloadFile(md, `${slug}.md`, "text/markdown");
+}
+
+function downloadJson(data: RenderPayload) {
+  const json = JSON.stringify(data, null, 2);
+  const slug = data.title.replace(/[^a-z0-9]/gi, "-").toLowerCase();
+  downloadFile(json, `${slug}.json`, "application/json");
+}
+
+function ExportDropdown({ data }: { data: RenderPayload }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="flex cursor-pointer items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground outline-none">
+        <Download className="h-3.5 w-3.5" />
+        <span>Export</span>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" sideOffset={6}>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => downloadMarkdown(data)}>
+          Markdown
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" onClick={() => downloadJson(data)}>
+          JSON
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function ShareUrlCopy({ shareId }: { shareId: string }) {
+  const [copied, setCopied] = useState(false);
+  const shareUrl = `codexl.ink/c/${shareId}`;
+
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(`https://${shareUrl}`).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [shareUrl]);
+
+  return (
+    <button
+      onClick={copy}
+      className="group inline-flex items-center gap-2 font-mono text-sm text-emerald-400 transition-colors hover:text-emerald-300"
+    >
+      <span>{shareUrl}</span>
+      {copied ? (
+        <Check className="h-3 w-3" />
+      ) : (
+        <Copy className="h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
+      )}
+    </button>
+  );
+}
+
+function ShareLinkButton({ shareId }: { shareId: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = useCallback(() => {
+    navigator.clipboard.writeText(`https://codexl.ink/c/${shareId}`).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [shareId]);
+
+  return (
+    <button
+      onClick={copy}
+      className="text-emerald-400 transition-colors hover:text-emerald-300"
+      title="Copy share link"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5" />
+      ) : (
+        <Link className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
 }
 
 // Try to extract a file path from tool input
@@ -596,7 +761,7 @@ function StatePanel({
   );
 }
 
-export function TranscriptPage({ result }: { result: ShareFetchResult }) {
+export function TranscriptPage({ result, shareId }: { result: ShareFetchResult; shareId: string }) {
   if (result.state === "not-found") {
     return (
       <StatePanel
@@ -624,32 +789,27 @@ export function TranscriptPage({ result }: { result: ShareFetchResult }) {
     <ImageLightboxProvider>
     <main className="mx-auto max-w-2xl px-5 py-8 md:py-12">
       {/* Top bar */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between">
         <a
           href="/"
-          className="flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
+          className="flex items-center gap-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
           <Terminal className="h-4 w-4" />
           <span className="font-medium">CodexLink</span>
         </a>
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <MessageSquare className="h-3 w-3" />
-            {totalMessages}
-          </span>
-          {totalTools > 0 && (
-            <span className="flex items-center gap-1.5">
-              <Wrench className="h-3 w-3" />
-              {totalTools}
-            </span>
-          )}
+        <div className="flex items-center gap-3">
+          <ExportDropdown data={data} />
+          <ThemeToggle />
         </div>
       </div>
 
       {/* Title */}
-      <h1 className="text-lg font-semibold tracking-tight">
-        {data.title}
-      </h1>
+      <div className="flex items-center gap-2.5">
+        <h1 className="text-lg font-semibold tracking-tight">
+          {data.title}
+        </h1>
+        <ShareLinkButton shareId={shareId} />
+      </div>
 
       {data.excerpt && data.excerpt !== data.title && (
         <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
@@ -658,11 +818,22 @@ export function TranscriptPage({ result }: { result: ShareFetchResult }) {
       )}
 
       {/* Metadata */}
-      <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
+      <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
         <span className="flex items-center gap-1.5">
           <Clock className="h-3 w-3" />
           {formatRelativeDate(data.createdAt)}
         </span>
+        <span>·</span>
+        <span className="flex items-center gap-1.5">
+          <MessageSquare className="h-3 w-3" />
+          {totalMessages}
+        </span>
+        {totalTools > 0 && (
+          <span className="flex items-center gap-1.5">
+            <Wrench className="h-3 w-3" />
+            {totalTools}
+          </span>
+        )}
       </div>
 
       {/* Divider */}
